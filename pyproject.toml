@@ -1,0 +1,7 @@
+[project]
+name = "py-bus"
+version = "0.1.0"
+description = "Educational event bus project"
+readme = "README.md"
+requires-python = ">=3.12.13"
+dependencies = []
