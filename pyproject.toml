@@ -4,4 +4,19 @@ version = "0.1.0"
 description = "Educational event bus project"
 readme = "README.md"
 requires-python = ">=3.12.13"
-dependencies = []
+
+[project.optional-dependencies]
+dev = ["mypy", "pytest", "pre-commit"]
+
+[tool.pytest]
+minversion = "9.0.2"
+addopts = ["-ra", "-q"]
+testpaths = [
+    "src"
+]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 79

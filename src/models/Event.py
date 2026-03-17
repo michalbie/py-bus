@@ -1,11 +1,9 @@
+from dataclasses import dataclass, field
 
-from dataclasses import dataclass
+from models.Handler import Handler
 
 
 @dataclass
 class Event:
-   name: str
-   payload: dict
-   subscribers: list = []
-
-    
+    name: str
+    handlers: list[Handler] = field(default_factory=list)

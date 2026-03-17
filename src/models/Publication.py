@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing_extensions import Literal
+from typing import Any, Literal
 
 
 @dataclass
@@ -10,4 +10,4 @@ class Publication:
     payload: dict
     timestamp: datetime
     status: Literal["success", "failed", "dry_run"]
-    results: list
+    results: dict[str, Any]
