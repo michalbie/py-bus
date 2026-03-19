@@ -6,8 +6,9 @@ from repositories.InMemoryRepository import InMemoryRepository
 from services.BusService import (
     BusRepository,
     BusService,
-    EventAlreadyExistsError,
-    HandlerAlreadyExistsError,
+    AlreadyExistsError,
+    EmptyNameError,
+    NotFoundError,
 )
 
 
@@ -30,10 +31,14 @@ class TestEvents:
         service.create_event("TestEvent")
         assert service.list_events() == [Event("TestEvent", [])]
 
+    def test_creating_empty_name(self, service: BusService):
+        with pytest.raises(EmptyNameError):
+            service.create_event("")
+
     def test_creating_existing(self, service: BusService):
         service.create_event("TestEvent")
 
-        with pytest.raises(EventAlreadyExistsError):
+        with pytest.raises(AlreadyExistsError):
             service.create_event("TestEvent")
 
 
@@ -45,17 +50,15 @@ class TestHandlers:
         service.create_handler("TestHandler", self.some_func)
         assert service.list_handlers() == [Handler("TestHandler", self.some_func)]
 
+    def test_creating_empty_name(self, service: BusService):
+        with pytest.raises(EmptyNameError):
+            service.create_handler("", self.some_func)
+
     def test_creating_existing_with_predefined_action(self, service: BusService):
         service.create_handler("TestHandler", self.some_func)
 
-        with pytest.raises(HandlerAlreadyExistsError):
+        with pytest.raises(AlreadyExistsError):
             service.create_handler("TestHandler", self.some_func)
-
-    def test_creating_existing_with_different_action(self, service: BusService):
-        service.create_handler("TestHandler", self.some_func)
-
-        with pytest.raises(HandlerAlreadyExistsError):
-            service.create_handler("TestHandler", lambda: print("different action"))
 
 
 class TestBus:
@@ -70,6 +73,20 @@ class TestBus:
             and len(events_list[0].handlers) == 1
             and events_list[0].handlers[0] == handler
         )
+
+    def test_subscribe_nonexistent_event(self, service: BusService):
+        handler = service.repository.create_handler("TestHandler", lambda x: x)
+        event = Event("NonExistentEvent")
+        with pytest.raises(NotFoundError):
+            service.subscribe(event, handler)
+
+    def test_subscribe_already_subscribed_handler(self, service: BusService):
+        event = service.create_event("TestEvent")
+        handler = service.repository.create_handler("TestHandler", lambda x: x)
+        service.subscribe(event, handler)
+
+        with pytest.raises(AlreadyExistsError):
+            service.subscribe(event, handler)
 
     def test_publish_with_handlers(self, service: BusService):
         def send_reminder_email():

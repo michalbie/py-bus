@@ -30,11 +30,15 @@ class BusRepository(ABC):
     def history(self) -> List[Publication]: ...
 
 
-class EventAlreadyExistsError(Exception):
+class NotFoundError(Exception):
     pass
 
 
-class HandlerAlreadyExistsError(Exception):
+class AlreadyExistsError(Exception):
+    pass
+
+
+class EmptyNameError(Exception):
     pass
 
 
@@ -45,22 +49,26 @@ class BusService:
     def create_event(self, name: str) -> Event:
         existing_events = [e.name for e in self.repository.list_events()]
 
-        if name not in existing_events:
-            event = self.repository.create_event(name)
-        else:
-            raise EventAlreadyExistsError(f"Event {name} already exists.")
+        if not name:
+            raise EmptyNameError("Event name cannot be empty.")
 
+        if name in existing_events:
+            raise AlreadyExistsError(f"Event {name} already exists.")
+
+        event = self.repository.create_event(name)
         return event
 
     def create_handler(self, name: str, action: Callable[..., Any]):
         existing_handlers = [e.name for e in self.repository.list_handlers()]
 
-        if name not in existing_handlers:
-            event = self.repository.create_handler(name, action)
-        else:
-            raise HandlerAlreadyExistsError(f"Handler {name} already exists.")
+        if not name:
+            raise EmptyNameError("Handler name cannot be empty.")
 
-        return event
+        if name in existing_handlers:
+            raise AlreadyExistsError(f"Handler {name} already exists.")
+
+        handler = self.repository.create_handler(name, action)
+        return handler
 
     def publish(self, event: Event, payload: str):
         results: dict[str, Any] = defaultdict(None)
@@ -71,6 +79,14 @@ class BusService:
         self.repository.publish(event=event, payload=payload, results=results)
 
     def subscribe(self, event: Event, handler: Handler):
+        if handler in event.handlers:
+            raise AlreadyExistsError(
+                f"Handler {handler.name} is already subscribed to event {event.name}."
+            )
+
+        if event not in self.repository.list_events():
+            raise NotFoundError(f"Event {event.name} does not exist.")
+
         self.repository.subscribe(event=event, handler=handler)
 
     def list_events(self):

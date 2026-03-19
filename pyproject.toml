@@ -6,12 +6,18 @@ readme = "README.md"
 requires-python = ">=3.12.13"
 dependencies = []
 
-[tool.pytest]
+[tool.hatch.build.targets.wheel]
+packages = ["src/"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
 minversion = "9.0.2"
-addopts = ["-ra", "-q"]
-testpaths = [
-    "src"
-]
+addopts = ["-ra", "-q", "--cov=src", "--cov-report=term-missing"]
+testpaths = ["src"]
+pythonpath = ["src"]
 
 [tool.isort]
 profile = "black"
@@ -25,4 +31,5 @@ dev = [
     "pytest>=7.0.0",
     "pre-commit>=2.0.0",
     "ruff>=0.15.7",
+    "pytest-cov>=7.0.0",
 ]

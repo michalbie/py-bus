@@ -1,5 +1,6 @@
 README.md
 pyproject.toml
+src/main.py
 src/handlers/print_something.py
 src/handlers/send_email.py
 src/models/Event.py
