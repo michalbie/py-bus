@@ -22,6 +22,9 @@ def service(repo: BusRepository) -> BusService:
     return BusService(repo)
 
 
+# TODO - Try empty strings, None etc. for every test
+
+
 class TestEvents:
     def test_creating(self, service: BusService):
         service.create_event("TestEvent")
@@ -40,27 +43,19 @@ class TestHandlers:
 
     def test_creating(self, service: BusService):
         service.create_handler("TestHandler", self.some_func)
-        assert service.list_handlers() == [
-            Handler("TestHandler", self.some_func)
-        ]
+        assert service.list_handlers() == [Handler("TestHandler", self.some_func)]
 
-    def test_creating_existing_with_predefined_action(
-        self, service: BusService
-    ):
+    def test_creating_existing_with_predefined_action(self, service: BusService):
         service.create_handler("TestHandler", self.some_func)
 
         with pytest.raises(HandlerAlreadyExistsError):
             service.create_handler("TestHandler", self.some_func)
 
-    def test_creating_existing_with_different_action(
-        self, service: BusService
-    ):
+    def test_creating_existing_with_different_action(self, service: BusService):
         service.create_handler("TestHandler", self.some_func)
 
         with pytest.raises(HandlerAlreadyExistsError):
-            service.create_handler(
-                "TestHandler", lambda: print("different action")
-            )
+            service.create_handler("TestHandler", lambda: print("different action"))
 
 
 class TestBus:

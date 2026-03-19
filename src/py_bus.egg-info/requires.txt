@@ -1,5 +1,0 @@
-
-[dev]
-mypy
-pytest
-pre-commit

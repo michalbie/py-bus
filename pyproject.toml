@@ -4,9 +4,7 @@ version = "0.1.0"
 description = "Educational event bus project"
 readme = "README.md"
 requires-python = ">=3.12.13"
-
-[project.optional-dependencies]
-dev = ["mypy", "pytest", "pre-commit"]
+dependencies = []
 
 [tool.pytest]
 minversion = "9.0.2"
@@ -20,3 +18,11 @@ profile = "black"
 
 [tool.black]
 line-length = 79
+
+[dependency-groups]
+dev = [
+    "mypy>=1.0.0",
+    "pytest>=7.0.0",
+    "pre-commit>=2.0.0",
+    "ruff>=0.15.7",
+]
