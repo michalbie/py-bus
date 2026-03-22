@@ -61,13 +61,19 @@ class BusService:
         handler = self.repository.create_handler(name, action)
         return handler
 
-    def publish(self, event: Event, payload: dict, status: STATUS_TYPES):
+    def publish(self, event: Event, payload: dict):
         results: dict[str, Any] = defaultdict(None)
+        status = "success"
 
         # Call handlers and collect results
         for handler in event.handlers:
             print(handler.action)  # Simulate handler action
             results[handler.name] = [True]  # Simulate successful handler execution
+
+        for result in results.values():
+            if not result:  # Simulate failure if any handler fails
+                status = "failed"
+                break
 
         self.repository.publish(event=event, payload=payload, status=status, results=results)
 

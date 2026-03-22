@@ -91,21 +91,19 @@ class TestBus:
         handler2 = service.repository.create_handler("SumHandler", "sum_numbers.py")
         event = service.subscribe(event, handler1)
         event = service.subscribe(event, handler2)
-        service.publish(event, {"data": "xyz"}, "dry_run")
+        service.publish(event, {"data": "xyz"})
         history = service.history()
 
         assert len(history) == 1
         assert history[0].event_name == "TestEvent"
         assert history[0].payload == {"data": "xyz"}
-        assert history[0].status == "dry_run"
 
     def test_publishing_without_handlers(self, service: BusService):
         event = service.create_event("TestEvent")
-        service.publish(event, {"data": "xyz"}, "dry_run")
+        service.publish(event, {"data": "xyz"})
         history = service.history()
 
         assert len(history) == 1
         assert history[0].event_name == "TestEvent"
         assert history[0].payload == {"data": "xyz"}
-        assert history[0].status == "dry_run"
         assert len(history[0].results) == 0

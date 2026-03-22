@@ -4,10 +4,18 @@ version = "0.1.0"
 description = "Educational event bus project"
 readme = "README.md"
 requires-python = ">=3.12.13"
-dependencies = []
+dependencies = [
+    "typer>=0.24.1",
+]
+
+[project.scripts]
+pybus = "main:app"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/"]
+packages = ["src"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = ""
 
 [build-system]
 requires = ["hatchling"]
