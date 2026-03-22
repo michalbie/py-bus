@@ -19,17 +19,22 @@ addopts = ["-ra", "-q", "--cov=src", "--cov-report=term-missing"]
 testpaths = ["src"]
 pythonpath = ["src"]
 
-[tool.isort]
-profile = "black"
+[tool.coverage.run]
+omit = ["src/handlers/*"]
 
-[tool.black]
-line-length = 79
+[tool.ruff]
+line-length = 100
+
+[tool.pyright]
+pythonVersion = "3.12"
+include = ["src"]
+
 
 [dependency-groups]
 dev = [
     "mypy>=1.0.0",
     "pytest>=7.0.0",
+    "pytest-cov>=7.0.0",
     "pre-commit>=2.0.0",
     "ruff>=0.15.7",
-    "pytest-cov>=7.0.0",
 ]

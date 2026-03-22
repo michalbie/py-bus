@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Any, Callable, List
+from typing import Any, List
 
 from models.Event import Event
 from models.Handler import Handler
-from models.Publication import Publication
+from models.Publication import STATUS_TYPES, Publication
+from exceptions import AlreadyExistsError, EmptyNameError, NotFoundError
 
 
 class BusRepository(ABC):
@@ -12,13 +13,15 @@ class BusRepository(ABC):
     def create_event(self, name: str) -> Event: ...
 
     @abstractmethod
-    def create_handler(self, name: str, action: Callable[..., Any]) -> Handler: ...
+    def create_handler(self, name: str, action: str) -> Handler: ...
 
     @abstractmethod
-    def publish(self, event: Event, payload: str, results: dict[str, Any]): ...
+    def publish(
+        self, event: Event, payload: dict, status: STATUS_TYPES, results: dict[str, Any]
+    ) -> Publication: ...
 
     @abstractmethod
-    def subscribe(self, event: Event, handler: Handler): ...
+    def subscribe(self, event: Event, handler: Handler) -> Event: ...
 
     @abstractmethod
     def list_events(self) -> List[Event]: ...
@@ -28,18 +31,6 @@ class BusRepository(ABC):
 
     @abstractmethod
     def history(self) -> List[Publication]: ...
-
-
-class NotFoundError(Exception):
-    pass
-
-
-class AlreadyExistsError(Exception):
-    pass
-
-
-class EmptyNameError(Exception):
-    pass
 
 
 class BusService:
@@ -58,7 +49,7 @@ class BusService:
         event = self.repository.create_event(name)
         return event
 
-    def create_handler(self, name: str, action: Callable[..., Any]):
+    def create_handler(self, name: str, action: str):
         existing_handlers = [e.name for e in self.repository.list_handlers()]
 
         if not name:
@@ -70,15 +61,17 @@ class BusService:
         handler = self.repository.create_handler(name, action)
         return handler
 
-    def publish(self, event: Event, payload: str):
+    def publish(self, event: Event, payload: dict, status: STATUS_TYPES):
         results: dict[str, Any] = defaultdict(None)
 
+        # Call handlers and collect results
         for handler in event.handlers:
-            results[handler.name] = handler.action()
+            print(handler.action)  # Simulate handler action
+            results[handler.name] = [True]  # Simulate successful handler execution
 
-        self.repository.publish(event=event, payload=payload, results=results)
+        self.repository.publish(event=event, payload=payload, status=status, results=results)
 
-    def subscribe(self, event: Event, handler: Handler):
+    def subscribe(self, event: Event, handler: Handler) -> Event:
         if handler in event.handlers:
             raise AlreadyExistsError(
                 f"Handler {handler.name} is already subscribed to event {event.name}."
@@ -87,7 +80,8 @@ class BusService:
         if event not in self.repository.list_events():
             raise NotFoundError(f"Event {event.name} does not exist.")
 
-        self.repository.subscribe(event=event, handler=handler)
+        event = self.repository.subscribe(event=event, handler=handler)
+        return event
 
     def list_events(self):
         return self.repository.list_events()

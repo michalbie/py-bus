@@ -1,10 +1,10 @@
 import uuid
 from datetime import datetime
-from typing import Any, Callable, List
+from typing import List, Any
 
 from models.Event import Event
 from models.Handler import Handler
-from models.Publication import Publication
+from models.Publication import STATUS_TYPES, Publication
 from services.BusService import BusRepository
 
 
@@ -19,24 +19,28 @@ class InMemoryRepository(BusRepository):
         self.events[name] = event
         return event
 
-    def create_handler(self, name: str, action: Callable[..., Any]) -> Handler:
+    def create_handler(self, name: str, action: str) -> Handler:
         handler = Handler(name, action)
         self.handlers[name] = handler
         return handler
 
-    def publish(self, event: Event, payload: str, results: dict[str, Any]):
+    def publish(
+        self, event: Event, payload: dict, status: STATUS_TYPES, results: dict[str, Any]
+    ) -> Publication:
         pub_id = str(uuid.uuid4())
         self.publications[pub_id] = Publication(
             id=pub_id,
             event_name=event.name,
             payload=payload,
             timestamp=datetime.now(),
-            status="dry_run",
+            status=status,
             results=results,
         )
+        return self.publications[pub_id]
 
-    def subscribe(self, event: Event, handler: Handler):
+    def subscribe(self, event: Event, handler: Handler) -> Event:
         self.events[event.name].handlers.append(handler)
+        return self.events[event.name]
 
     def list_events(self) -> List[Event]:
         return [event for event in self.events.values()]
