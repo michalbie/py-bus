@@ -1,13 +1,12 @@
 import contextlib
 import json
-import uuid
 from datetime import datetime
-from typing import Any, List
+from typing import List
 import sqlite3
 
 from models.Event import Event
 from models.Handler import Handler
-from models.Publication import STATUS_TYPES, Publication
+from models.Publication import Publication
 from services.BusService import BusRepository
 
 
@@ -55,36 +54,51 @@ class SQLiteRepository(BusRepository):
             """
             )
 
-    def create_event(self, name: str) -> Event:
-        event = Event(name)
+    def create_event(self, event: Event) -> None:
         with self.conn:
             self.conn.execute(
                 "INSERT INTO events (name) VALUES (?)",
-                (name,),
+                (event.name,),
             )
-        return event
 
-    def create_handler(self, name: str, action: str) -> Handler:
-        handler = Handler(name, action)
+    def create_handler(self, handler: Handler) -> None:
         with self.conn:
             self.conn.execute(
                 "INSERT INTO handlers (name, action) VALUES (?, ?)",
-                (name, action),
+                (handler.name, handler.action),
             )
-        return handler
 
-    def publish(
-        self, event: Event, payload: dict, status: STATUS_TYPES, results: dict[str, Any]
-    ) -> Publication:
-        pub_id = str(uuid.uuid4())
-        publication = Publication(
-            id=pub_id,
-            event_name=event.name,
-            payload=payload,
-            timestamp=datetime.now(),
-            status=status,
-            results=results,
-        )
+    def get_event(self, name: str) -> Event | None:
+        with self.conn:
+            with contextlib.closing(
+                self.conn.execute(
+                    "SELECT e.name, h.name, h.action FROM events e LEFT JOIN subscriptions s ON e.name = s.event_name LEFT JOIN handlers h ON s.handler_name = h.name WHERE e.name = ?",
+                    (name,),
+                )
+            ) as cursor:
+                rows = cursor.fetchall()
+                if not rows:
+                    return None
+
+                event_name = rows[0][0]
+                handlers = [Handler(row[1], row[2]) for row in rows if row[1]]
+                return Event(event_name, handlers)
+
+    def get_handler(self, name: str) -> Handler | None:
+        with self.conn:
+            with contextlib.closing(
+                self.conn.execute(
+                    "SELECT name, action FROM handlers WHERE name = ?",
+                    (name,),
+                )
+            ) as cursor:
+                row = cursor.fetchone()
+                if not row:
+                    return None
+
+                return Handler(row[0], row[1])
+
+    def publish(self, publication: Publication) -> None:
         with self.conn:
             self.conn.execute(
                 """
@@ -92,24 +106,21 @@ class SQLiteRepository(BusRepository):
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    pub_id,
-                    event.name,
-                    json.dumps(payload),
-                    datetime.now().isoformat(),
-                    status,
-                    json.dumps(results),
+                    publication.id,
+                    publication.event_name,
+                    json.dumps(publication.payload),
+                    publication.timestamp.isoformat(),
+                    publication.status,
+                    json.dumps(publication.results),
                 ),
             )
-        return publication
 
-    def subscribe(self, event: Event, handler: Handler) -> Event:
+    def subscribe(self, event: Event, handler: Handler) -> None:
         with self.conn:
             self.conn.execute(
-                "INSERT INTO subscriptions (event_name, handler_name) VALUES (?, ?) RETURNING *",
+                "INSERT INTO subscriptions (event_name, handler_name) VALUES (?, ?)",
                 (event.name, handler.name),
             )
-
-        return Event(name=event.name, handlers=[*event.handlers, handler])
 
     def list_events(self) -> List[Event]:
         with self.conn:

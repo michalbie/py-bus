@@ -31,7 +31,7 @@ def service(repo: BusRepository) -> BusService:
 class TestEvents:
     def test_creating(self, service: BusService):
         service.create_event("TestEvent")
-        assert service.list_events() == [Event("TestEvent", [])]
+        assert service.get_event("TestEvent") == Event("TestEvent", [])
 
     def test_creating_empty_name(self, service: BusService):
         with pytest.raises(EmptyNameError):
@@ -47,7 +47,7 @@ class TestEvents:
 class TestHandlers:
     def test_creating(self, service: BusService):
         service.create_handler("TestHandler", "send_email.py")
-        assert service.list_handlers() == [Handler("TestHandler", "send_email.py")]
+        assert service.get_handler("TestHandler") == Handler("TestHandler", "send_email.py")
 
     def test_creating_empty_name(self, service: BusService):
         with pytest.raises(EmptyNameError):
@@ -60,47 +60,58 @@ class TestHandlers:
             service.create_handler("TestHandler", "send_email.py")
 
 
-class TestBus:
+class TestSubscription:
     def test_subscribe(self, service: BusService):
         event = service.create_event("TestEvent")
-        handler = service.repository.create_handler("TestHandler", "send_email.py")
-        service.subscribe(event, handler)
-        events_list = service.list_events()
+        handler = service.create_handler("TestHandler", "send_email.py")
+        service.subscribe(event.name, handler.name)
 
-        assert events_list[0].name == "TestEvent"
-        assert len(events_list[0].handlers) == 1
-        assert events_list[0].handlers[0] == handler
+        event = service.get_event("TestEvent")
+
+        assert event is not None
+        assert event.name == "TestEvent"
+        assert len(event.handlers) == 1
+        assert event.handlers[0] == handler
 
     def test_subscribe_nonexistent_event(self, service: BusService):
-        handler = service.repository.create_handler("TestHandler", "send_email.py")
-        unpopulated_event = Event("NonExistentEvent")
+        handler = service.create_handler("TestHandler", "send_email.py")
+
         with pytest.raises(NotFoundError):
-            service.subscribe(unpopulated_event, handler)
+            service.subscribe("NonExistentEvent", handler.name)
+
+    def test_subscribe_nonexistent_handler(self, service: BusService):
+        event = service.create_event("TestEvent")
+
+        with pytest.raises(NotFoundError):
+            service.subscribe(event.name, "NonExistentHandler")
 
     def test_subscribe_already_subscribed_handler(self, service: BusService):
         event = service.create_event("TestEvent")
-        handler = service.repository.create_handler("TestHandler", "send_email.py")
-        event = service.subscribe(event, handler)
+        handler = service.create_handler("TestHandler", "send_email.py")
+        service.subscribe(event.name, handler.name)
 
         with pytest.raises(AlreadyExistsError):
-            service.subscribe(event, handler)
+            service.subscribe(event.name, handler.name)
 
+
+class TestPublishing:
     def test_publish_with_handlers(self, service: BusService):
         event = service.create_event("TestEvent")
-        handler1 = service.repository.create_handler("EmailHandler", "send_email.py")
-        handler2 = service.repository.create_handler("SumHandler", "sum_numbers.py")
-        event = service.subscribe(event, handler1)
-        event = service.subscribe(event, handler2)
-        service.publish(event, {"data": "xyz"})
+        handler1 = service.create_handler("EmailHandler", "send_email.py")
+        handler2 = service.create_handler("SumHandler", "sum_numbers.py")
+        service.subscribe(event.name, handler1.name)
+        service.subscribe(event.name, handler2.name)
+        service.publish(event.name, {"data": "xyz"})
         history = service.history()
 
         assert len(history) == 1
         assert history[0].event_name == "TestEvent"
         assert history[0].payload == {"data": "xyz"}
+        assert len(history[0].results) == 2
 
     def test_publishing_without_handlers(self, service: BusService):
         event = service.create_event("TestEvent")
-        service.publish(event, {"data": "xyz"})
+        service.publish(event.name, {"data": "xyz"})
         history = service.history()
 
         assert len(history) == 1

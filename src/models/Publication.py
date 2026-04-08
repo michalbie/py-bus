@@ -1,15 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
+import uuid
 
-STATUS_TYPES = Literal["success", "failed", "dry_run"]
+STATUS_TYPES = Literal["success", "failed"]
 
 
 @dataclass
 class Publication:
-    id: str
     event_name: str
     payload: dict
-    timestamp: datetime
-    status: Literal["success", "failed", "dry_run"]
-    results: dict[str, Any]
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: datetime = field(default_factory=datetime.now)
+    status: STATUS_TYPES = "success"
+    results: dict[str, Any] = field(default_factory=dict)

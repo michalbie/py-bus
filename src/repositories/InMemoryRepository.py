@@ -1,10 +1,9 @@
-import uuid
-from datetime import datetime
-from typing import List, Any
+from copy import deepcopy
+from typing import List
 
 from models.Event import Event
 from models.Handler import Handler
-from models.Publication import STATUS_TYPES, Publication
+from models.Publication import Publication
 from services.BusService import BusRepository
 
 
@@ -14,33 +13,23 @@ class InMemoryRepository(BusRepository):
         self.handlers: dict[str, Handler] = {}
         self.publications: dict[str, Publication] = {}
 
-    def create_event(self, name: str) -> Event:
-        event = Event(name)
-        self.events[name] = event
-        return event
+    def create_event(self, event: Event) -> None:
+        self.events[event.name] = deepcopy(event)
 
-    def create_handler(self, name: str, action: str) -> Handler:
-        handler = Handler(name, action)
-        self.handlers[name] = handler
-        return handler
+    def create_handler(self, handler: Handler) -> None:
+        self.handlers[handler.name] = deepcopy(handler)
 
-    def publish(
-        self, event: Event, payload: dict, status: STATUS_TYPES, results: dict[str, Any]
-    ) -> Publication:
-        pub_id = str(uuid.uuid4())
-        self.publications[pub_id] = Publication(
-            id=pub_id,
-            event_name=event.name,
-            payload=payload,
-            timestamp=datetime.now(),
-            status=status,
-            results=results,
-        )
-        return self.publications[pub_id]
+    def get_event(self, name: str) -> Event | None:
+        return self.events.get(name)
 
-    def subscribe(self, event: Event, handler: Handler) -> Event:
-        self.events[event.name].handlers.append(handler)
-        return self.events[event.name]
+    def get_handler(self, name: str) -> Handler | None:
+        return self.handlers.get(name)
+
+    def publish(self, publication: Publication) -> None:
+        self.publications[publication.id] = deepcopy(publication)
+
+    def subscribe(self, event: Event, handler: Handler) -> None:
+        self.events[event.name] = deepcopy(event)
 
     def list_events(self) -> List[Event]:
         return [event for event in self.events.values()]
