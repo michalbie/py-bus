@@ -12,6 +12,8 @@ from services.BusService import (
     NotFoundError,
 )
 
+# TODO - split to integration tests, read more book
+
 
 @pytest.fixture(params=["in-memory", "sqlite"])
 def repo(request) -> BusRepository:

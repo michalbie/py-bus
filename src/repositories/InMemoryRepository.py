@@ -29,6 +29,8 @@ class InMemoryRepository(BusRepository):
         self.publications[publication.id] = deepcopy(publication)
 
     def subscribe(self, event: Event, handler: Handler) -> None:
+        if handler not in event.handlers:
+            event.handlers.append(handler)
         self.events[event.name] = deepcopy(event)
 
     def list_events(self) -> List[Event]:
